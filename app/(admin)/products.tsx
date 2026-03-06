@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBadge from '../../components/StatusBadge';
-import { supabase } from '../../lib/supabase';
+import { products as productsApi } from '../../lib/client';
 import { Product } from '../../lib/types';
 
 const FILTERS = ['all', 'pending', 'approved', 'rejected'] as const;
@@ -25,13 +25,9 @@ export default function AdminProductsScreen() {
 
   const fetchProducts = async () => {
     setLoading(true);
-    let query = supabase
-      .from('products')
-      .select('*, seller:seller_profiles(*), category:categories(*)')
-      .order('created_at', { ascending: false });
-    if (filter !== 'all') query = query.eq('status', filter);
-    const { data } = await query;
-    setProducts(data ?? []);
+    const allProducts = await productsApi.getAll();
+    const data = filter === 'all' ? allProducts : allProducts.filter(p => p.status === filter);
+    setProducts(data);
     setLoading(false);
   };
 

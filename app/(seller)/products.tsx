@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBadge from '../../components/StatusBadge';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { sellers, products as productsApi } from '../../lib/client';
 import { Product } from '../../lib/types';
 
 export default function SellerProductsScreen() {
@@ -24,15 +24,11 @@ export default function SellerProductsScreen() {
   const fetchProducts = async () => {
     if (!profile) return;
     setLoading(true);
-    const { data: sp } = await supabase.from('seller_profiles').select('id').eq('user_id', profile.id).single();
+    const sp = await sellers.getByUserId(profile.id);
     if (!sp) { setLoading(false); return; }
     setSellerId(sp.id);
-    const { data } = await supabase
-      .from('products')
-      .select('*, category:categories(*)')
-      .eq('seller_id', sp.id)
-      .order('created_at', { ascending: false });
-    setProducts(data ?? []);
+    const data = await productsApi.getBySeller(sp.id);
+    setProducts(data);
     setLoading(false);
   };
 
@@ -41,7 +37,7 @@ export default function SellerProductsScreen() {
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete', style: 'destructive', onPress: async () => {
-          await supabase.from('products').delete().eq('id', id);
+          await productsApi.delete(id);
           setProducts((prev) => prev.filter((p) => p.id !== id));
         },
       },

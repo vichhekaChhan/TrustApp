@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBadge from '../../../components/StatusBadge';
-import { supabase } from '../../../lib/supabase';
+import { products as productsApi } from '../../../lib/client';
 import { Product, VerificationStatus } from '../../../lib/types';
 
 const SCREEN_W = Dimensions.get('window').width - 40;
@@ -30,11 +30,7 @@ export default function AdminProductDetailScreen() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from('products')
-        .select('*, seller:seller_profiles(*), category:categories(*)')
-        .eq('id', id)
-        .single();
+      const data = await productsApi.getById(id);
       setProduct(data);
       setAdminNotes(data?.admin_notes ?? '');
       setLoading(false);
@@ -44,13 +40,8 @@ export default function AdminProductDetailScreen() {
   const updateStatus = async (status: VerificationStatus) => {
     if (!product) return;
     setSaving(true);
-    const { error } = await supabase.from('products').update({
-      status,
-      admin_notes: adminNotes.trim() || null,
-      reviewed_at: new Date().toISOString(),
-    }).eq('id', id);
+    await productsApi.review(id, status, adminNotes.trim() || undefined);
     setSaving(false);
-    if (error) { Alert.alert('Error', error.message); return; }
     setProduct((prev) => prev ? { ...prev, status } : prev);
     Alert.alert('Updated!', `Product has been ${status}.`, [
       { text: 'OK', onPress: () => router.back() },

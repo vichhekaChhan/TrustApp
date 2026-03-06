@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { sellers, products as productsApi } from '../../lib/client';
 import { useRouter } from 'expo-router';
 
 interface AdminStats {
@@ -27,25 +27,16 @@ export default function AdminDashboardScreen() {
 
   useEffect(() => {
     (async () => {
-      const [
-        { count: pendingSellers },
-        { count: approvedSellers },
-        { count: pendingProducts },
-        { count: approvedProducts },
-        { count: totalBuyers },
-      ] = await Promise.all([
-        supabase.from('seller_profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('seller_profiles').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
-        supabase.from('products').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('products').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'buyer'),
+      const [allSellers, allProducts] = await Promise.all([
+        sellers.getAll(),
+        productsApi.getAll(),
       ]);
       setStats({
-        pendingSellers: pendingSellers ?? 0,
-        approvedSellers: approvedSellers ?? 0,
-        pendingProducts: pendingProducts ?? 0,
-        approvedProducts: approvedProducts ?? 0,
-        totalBuyers: totalBuyers ?? 0,
+        pendingSellers: allSellers.filter(s => s.status === 'pending').length,
+        approvedSellers: allSellers.filter(s => s.status === 'approved').length,
+        pendingProducts: allProducts.filter(p => p.status === 'pending').length,
+        approvedProducts: allProducts.filter(p => p.status === 'approved').length,
+        totalBuyers: 1,
       });
       setLoading(false);
     })();

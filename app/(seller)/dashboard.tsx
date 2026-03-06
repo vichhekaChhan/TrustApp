@@ -3,7 +3,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View
 import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBadge from '../../components/StatusBadge';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { sellers, products as productsApi } from '../../lib/client';
 import { SellerProfile } from '../../lib/types';
 import { useRouter } from 'expo-router';
 
@@ -24,16 +24,12 @@ export default function SellerDashboardScreen() {
   useEffect(() => {
     (async () => {
       if (!profile) return;
-      const [{ data: sp }, { data: products }] = await Promise.all([
-        supabase.from('seller_profiles').select('*').eq('user_id', profile.id).single(),
-        supabase.from('products').select('status').eq('seller_id',
-          (await supabase.from('seller_profiles').select('id').eq('user_id', profile.id).single()).data?.id ?? ''
-        ),
-      ]);
+      const sp = await sellers.getByUserId(profile.id);
       setSellerProfile(sp);
-      if (products) {
-        const st = { total: products.length, approved: 0, pending: 0, rejected: 0 };
-        products.forEach((p) => { st[p.status as keyof typeof st]++; });
+      if (sp) {
+        const prods = await productsApi.getBySeller(sp.id);
+        const st = { total: prods.length, approved: 0, pending: 0, rejected: 0 };
+        prods.forEach((p) => { st[p.status as keyof typeof st]++; });
         setStats(st);
       }
       setLoading(false);

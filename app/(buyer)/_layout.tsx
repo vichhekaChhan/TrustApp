@@ -31,6 +31,16 @@ export default function BuyerLayout() {
         }}
       />
       <Tabs.Screen
+        name="scan"
+        options={{
+          title: 'Scan',
+          tabBarLabel: 'Scan',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📷</Text>,
+          headerStyle: { backgroundColor: '#000' },
+          headerTintColor: '#fff',
+        }}
+      />
+      <Tabs.Screen
         name="product/[id]"
         options={{ href: null }}
       />

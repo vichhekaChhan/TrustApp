@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ProductCard from '../../components/ProductCard';
-import { supabase } from '../../lib/supabase';
+import { products as productsApi } from '../../lib/client';
 import { Product } from '../../lib/types';
 
 export default function SearchScreen() {
@@ -22,13 +22,8 @@ export default function SearchScreen() {
     if (!query.trim()) return;
     setLoading(true);
     setSearched(true);
-    const { data } = await supabase
-      .from('products')
-      .select('*, seller:seller_profiles(*), category:categories(*)')
-      .eq('status', 'approved')
-      .ilike('title', `%${query.trim()}%`)
-      .order('created_at', { ascending: false });
-    setResults(data ?? []);
+    const data = await productsApi.getApproved({ search: query.trim() });
+    setResults(data);
     setLoading(false);
   };
 

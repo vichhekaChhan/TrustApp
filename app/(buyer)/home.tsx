@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ProductCard from '../../components/ProductCard';
-import { supabase } from '../../lib/supabase';
+import { categories as categoriesApi, products as productsApi } from '../../lib/client';
 import { Category, Product } from '../../lib/types';
 
 export default function BuyerHomeScreen() {
@@ -21,23 +21,17 @@ export default function BuyerHomeScreen() {
   const [loading, setLoading] = useState(true);
 
   const fetchCategories = async () => {
-    const { data } = await supabase.from('categories').select('*').order('name');
-    setCategories(data ?? []);
+    const data = await categoriesApi.getAll();
+    setCategories(data);
   };
 
   const fetchProducts = async () => {
     setLoading(true);
-    let query = supabase
-      .from('products')
-      .select('*, seller:seller_profiles(*), category:categories(*)')
-      .eq('status', 'approved')
-      .order('created_at', { ascending: false });
-
-    if (selectedCategory) query = query.eq('category_id', selectedCategory);
-    if (search.trim()) query = query.ilike('title', `%${search.trim()}%`);
-
-    const { data } = await query;
-    setProducts(data ?? []);
+    const data = await productsApi.getApproved({
+      categoryId: selectedCategory ?? undefined,
+      search,
+    });
+    setProducts(data);
     setLoading(false);
   };
 

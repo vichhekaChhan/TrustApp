@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBadge from '../../components/StatusBadge';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { sellers } from '../../lib/client';
 import { SellerProfile } from '../../lib/types';
 
 export default function VerificationScreen() {
@@ -30,7 +30,7 @@ export default function VerificationScreen() {
   useEffect(() => {
     (async () => {
       if (!profile) return;
-      const { data } = await supabase.from('seller_profiles').select('*').eq('user_id', profile.id).single();
+      const data = await sellers.getByUserId(profile.id);
       setSellerProfile(data);
       if (data) {
         setBusinessName(data.business_name ?? '');
@@ -50,13 +50,7 @@ export default function VerificationScreen() {
 
   const uploadIdCard = async (): Promise<string | null> => {
     if (!idCard || !profile) return sellerProfile?.id_card_url ?? null;
-    const filename = `id-cards/${profile.id}/${Date.now()}.jpg`;
-    const response = await fetch(idCard.uri);
-    const blob = await response.blob();
-    const { error } = await supabase.storage.from('id-cards').upload(filename, blob, { contentType: 'image/jpeg', upsert: true });
-    if (error) return null;
-    const { data } = supabase.storage.from('id-cards').getPublicUrl(filename);
-    return data.publicUrl;
+    return sellers.uploadIdCard(profile.id, idCard.uri).catch(() => null);
   };
 
   const handleSubmit = async () => {
@@ -74,22 +68,14 @@ export default function VerificationScreen() {
     const payload = {
       user_id: profile!.id,
       full_name: profile!.full_name,
-      business_name: businessName.trim() || null,
-      phone: phone.trim() || null,
+      business_name: businessName.trim() || undefined,
+      phone: phone.trim() || undefined,
       id_card_url: idCardUrl,
-      status: 'pending' as const,
-      submitted_at: new Date().toISOString(),
     };
-    let error;
-    if (sellerProfile) {
-      ({ error } = await supabase.from('seller_profiles').update(payload).eq('id', sellerProfile.id));
-    } else {
-      ({ error } = await supabase.from('seller_profiles').insert(payload));
-    }
+    await sellers.submitVerification(payload);
     setLoading(false);
-    if (error) { Alert.alert('Error', error.message); return; }
     Alert.alert('Submitted! 🎉', 'Your verification request has been submitted. An admin will review it shortly.');
-    const { data } = await supabase.from('seller_profiles').select('*').eq('user_id', profile!.id).single();
+    const data = await sellers.getByUserId(profile!.id);
     setSellerProfile(data);
   };
 

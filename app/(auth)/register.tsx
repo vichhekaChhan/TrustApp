@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { supabase } from '../../lib/supabase';
+import { auth as authApi } from '../../lib/client';
 import { UserRole } from '../../lib/types';
 
 const ROLES: { label: string; value: UserRole; icon: string; desc: string }[] = [
@@ -38,25 +38,13 @@ export default function RegisterScreen() {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error || !data.user) {
-      setLoading(false);
+    const { data, error } = await authApi.signUp(email, password, fullName, role);
+    setLoading(false);
+    if (error || !data?.user) {
       Alert.alert('Registration Failed', error?.message ?? 'Unknown error');
       return;
     }
-    // Create profile in profiles table
-    const { error: profileError } = await supabase.from('profiles').insert({
-      id: data.user.id,
-      email,
-      full_name: fullName,
-      role,
-    });
-    setLoading(false);
-    if (profileError) {
-      Alert.alert('Profile Error', profileError.message);
-      return;
-    }
-    Alert.alert('Success!', 'Account created. Please check your email to confirm.', [
+    Alert.alert('Success! 🎉', 'Account created successfully!', [
       { text: 'OK', onPress: () => router.replace('/(auth)/login') },
     ]);
   };

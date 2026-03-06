@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBadge from '../../../components/StatusBadge';
-import { supabase } from '../../../lib/supabase';
+import { sellers } from '../../../lib/client';
 import { SellerProfile, VerificationStatus } from '../../../lib/types';
 
 export default function AdminSellerDetailScreen() {
@@ -26,11 +26,7 @@ export default function AdminSellerDetailScreen() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from('seller_profiles')
-        .select('*, profile:profiles(*)')
-        .eq('id', id)
-        .single();
+      const data = await sellers.getById(id);
       setSeller(data);
       setAdminNotes(data?.admin_notes ?? '');
       setLoading(false);
@@ -40,13 +36,8 @@ export default function AdminSellerDetailScreen() {
   const updateStatus = async (status: VerificationStatus) => {
     if (!seller) return;
     setSaving(true);
-    const { error } = await supabase.from('seller_profiles').update({
-      status,
-      admin_notes: adminNotes.trim() || null,
-      reviewed_at: new Date().toISOString(),
-    }).eq('id', id);
+    await sellers.review(id, status, adminNotes.trim() || undefined);
     setSaving(false);
-    if (error) { Alert.alert('Error', error.message); return; }
     setSeller((prev) => prev ? { ...prev, status, admin_notes: adminNotes.trim() || undefined } : prev);
     Alert.alert('Updated!', `Seller has been ${status}.`, [
       { text: 'OK', onPress: () => router.back() },

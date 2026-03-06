@@ -32,7 +32,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-image-picker"
+      "expo-image-picker",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow TrustMarket to access your camera to scan product QR codes."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

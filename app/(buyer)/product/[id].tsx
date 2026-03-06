@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBadge from '../../../components/StatusBadge';
 import VerifiedBadge from '../../../components/VerifiedBadge';
-import { supabase } from '../../../lib/supabase';
+import { products as productsApi } from '../../../lib/client';
 import { Product } from '../../../lib/types';
 
 const SCREEN_W = Dimensions.get('window').width;
@@ -28,11 +28,7 @@ export default function ProductDetailScreen() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from('products')
-        .select('*, seller:seller_profiles(*), category:categories(*)')
-        .eq('id', id)
-        .single();
+      const data = await productsApi.getById(id);
       setProduct(data);
       setLoading(false);
     })();

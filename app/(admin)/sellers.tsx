@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBadge from '../../components/StatusBadge';
-import { supabase } from '../../lib/supabase';
+import { sellers } from '../../lib/client';
 import { SellerProfile } from '../../lib/types';
 
 const FILTERS = ['all', 'pending', 'approved', 'rejected'] as const;
@@ -24,13 +24,9 @@ export default function AdminSellersScreen() {
 
   const fetchSellers = async () => {
     setLoading(true);
-    let query = supabase
-      .from('seller_profiles')
-      .select('*, profile:profiles(*)')
-      .order('submitted_at', { ascending: false });
-    if (filter !== 'all') query = query.eq('status', filter);
-    const { data } = await query;
-    setSellers(data ?? []);
+    const allSellers = await sellers.getAll();
+    const data = filter === 'all' ? allSellers : allSellers.filter(s => s.status === filter);
+    setSellers(data);
     setLoading(false);
   };
 

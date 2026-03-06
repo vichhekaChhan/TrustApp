@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { sellers, categories as categoriesApi, products as productsApi } from '../../lib/client';
 import { Category, SellerProfile } from '../../lib/types';
 
 export default function AddProductScreen() {
@@ -31,12 +31,12 @@ export default function AddProductScreen() {
   useEffect(() => {
     (async () => {
       if (!profile) return;
-      const [{ data: sp }, { data: cats }] = await Promise.all([
-        supabase.from('seller_profiles').select('*').eq('user_id', profile.id).single(),
-        supabase.from('categories').select('*').order('name'),
+      const [sp, cats] = await Promise.all([
+        sellers.getByUserId(profile.id),
+        categoriesApi.getAll(),
       ]);
       setSellerProfile(sp);
-      setCategories(cats ?? []);
+      setCategories(cats);
     })();
   }, [profile]);
 
@@ -50,18 +50,7 @@ export default function AddProductScreen() {
   };
 
   const uploadImages = async (sellerId: string): Promise<string[]> => {
-    const urls: string[] = [];
-    for (const img of images) {
-      const filename = `products/${sellerId}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-      const response = await fetch(img.uri);
-      const blob = await response.blob();
-      const { error } = await supabase.storage.from('product-images').upload(filename, blob, { contentType: 'image/jpeg' });
-      if (!error) {
-        const { data } = supabase.storage.from('product-images').getPublicUrl(filename);
-        urls.push(data.publicUrl);
-      }
-    }
-    return urls;
+    return Promise.all(images.map((img) => productsApi.uploadImage(sellerId, img.uri)));
   };
 
   const handleSubmit = async () => {
@@ -79,15 +68,14 @@ export default function AddProductScreen() {
     }
     setLoading(true);
     const imageUrls = await uploadImages(sellerProfile.id);
-    const { error } = await supabase.from('products').insert({
+    const error = await productsApi.create({
       seller_id: sellerProfile.id,
       title: title.trim(),
       description: description.trim(),
       price: parseFloat(price),
-      category_id: categoryId,
+      category_id: categoryId ?? undefined,
       images: imageUrls,
-      status: 'pending',
-    });
+    }).then(() => null).catch((e: any) => e);
     setLoading(false);
     if (error) {
       Alert.alert('Error', error.message);
