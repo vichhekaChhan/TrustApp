@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBadge from '../../components/StatusBadge';
-import { sellers } from '../../lib/client';
+import { sellers as sellersApi } from '../../lib/client';
 import { SellerProfile } from '../../lib/types';
 
 const FILTERS = ['all', 'pending', 'approved', 'rejected'] as const;
@@ -18,15 +18,15 @@ type Filter = typeof FILTERS[number];
 
 export default function AdminSellersScreen() {
   const router = useRouter();
-  const [sellers, setSellers] = useState<SellerProfile[]>([]);
+  const [sellerList, setSellerList] = useState<SellerProfile[]>([]);
   const [filter, setFilter] = useState<Filter>('pending');
   const [loading, setLoading] = useState(true);
 
   const fetchSellers = async () => {
     setLoading(true);
-    const allSellers = await sellers.getAll();
+    const allSellers = await sellersApi.getAll();
     const data = filter === 'all' ? allSellers : allSellers.filter(s => s.status === filter);
-    setSellers(data);
+    setSellerList(data);
     setLoading(false);
   };
 
@@ -70,14 +70,14 @@ export default function AdminSellersScreen() {
 
       {loading ? (
         <ActivityIndicator size="large" color="#7c3aed" style={{ marginTop: 60 }} />
-      ) : sellers.length === 0 ? (
+      ) : sellerList.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyIcon}>📭</Text>
           <Text style={styles.emptyText}>No {filter} sellers</Text>
         </View>
       ) : (
         <FlatList
-          data={sellers}
+          data={sellerList}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
